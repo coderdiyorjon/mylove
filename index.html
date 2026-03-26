@@ -11,8 +11,6 @@
         rel="stylesheet">
     <!-- FontAwesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <!-- Matter.js -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/matter-js/0.19.0/matter.min.js"></script>
     <style>
         * {
             margin: 0;
@@ -213,16 +211,15 @@
             width: 90vw;
             max-width: 800px;
             aspect-ratio: 16 / 9;
-            /* Aynan gorizontal 16:9 videolar uchun */
             height: auto;
             display: none;
             opacity: 0;
             pointer-events: auto;
+            cursor: pointer;
             z-index: 20;
 
             border-radius: 20px;
             padding: 8px;
-            /* Ramka effekti sig'ishi uchun kichik bo'shliq */
             background: rgba(255, 182, 193, 0.1);
             backdrop-filter: blur(12px);
             border: 1px solid rgba(255, 255, 255, 0.2);
@@ -242,72 +239,42 @@
             height: 100%;
             display: block;
             object-fit: cover;
-            /* 16:9 ramkani to'liq, asliga mos qoplab oladi */
             border-radius: 14px;
             background: #000;
         }
 
-        #muteBtn {
+        /* Play/Pause tugmasi */
+        #playPauseOverlay {
             position: absolute;
-            bottom: 20px;
-            right: 20px;
-            background: rgba(255, 255, 255, 0.15);
-            backdrop-filter: blur(8px);
-            color: #fff;
-            border: 1px solid rgba(255, 255, 255, 0.3);
-            border-radius: 50%;
-            width: 50px;
-            height: 50px;
-            font-size: 1.2rem;
-            cursor: pointer;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            transition: all 0.4s ease;
-            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
-            outline: none;
-            z-index: 25;
-        }
-
-        #muteBtn:hover {
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 70px;
+            height: 70px;
             background: rgba(255, 105, 180, 0.6);
-            transform: scale(1.1) rotate(5deg);
-        }
-
-        #matterContainer {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            z-index: 30;
-            pointer-events: none;
-        }
-
-        .physics-item {
-            position: absolute;
-            cursor: grab;
-            user-select: none;
-            pointer-events: auto;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-
-        .physics-item:active {
-            cursor: grabbing;
-        }
-
-        .romantic-text {
-            font-family: 'Dancing Script', cursive;
-            background: rgba(255, 255, 255, 0.1);
             backdrop-filter: blur(5px);
-            border: 1px solid rgba(255, 182, 193, 0.4);
             border-radius: 50%;
-            color: #fff0f5;
-            font-size: 1.1rem;
-            text-shadow: 0 0 5px rgba(255, 105, 180, 0.8);
-            box-shadow: 0 5px 15px rgba(255, 105, 180, 0.2);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            color: #fff;
+            font-size: 2rem;
+            z-index: 21;
+            box-shadow: 0 0 20px rgba(255, 105, 180, 0.8);
+            transition: all 0.3s ease;
+            pointer-events: auto;
+            /* changed from none so we can hide it properly */
+            opacity: 0;
+            cursor: pointer;
+        }
+
+        #videoWrapper:hover #playPauseOverlay {
+            background: rgba(255, 105, 180, 0.9);
+            transform: translate(-50%, -50%) scale(1.1);
+        }
+
+        #videoWrapper.paused #playPauseOverlay {
+            opacity: 1;
         }
     </style>
 </head>
@@ -317,19 +284,18 @@
         <div class="heart-pulse">
             <i class="fa-solid fa-heart"></i>
         </div>
-        <p>Ochish uchun bosing...</p>
+        <p>Click to open...</p>
     </div>
 
     <canvas id="matrixCanvas"></canvas>
-    <div id="matterContainer"></div>
 
     <div id="contentContainer">
         <div id="countdown">3</div>
         <div id="wordContainer"></div>
 
-        <div id="videoWrapper">
-            <video id="myVideo" autoplay loop playsinline></video>
-            <button id="muteBtn"><i class="fa-solid fa-volume-high"></i></button>
+        <div id="videoWrapper" class="paused">
+            <video id="myVideo" playsinline preload="auto"></video>
+            <div id="playPauseOverlay"><i class="fa-solid fa-play"></i></div>
         </div>
     </div>
 
@@ -337,56 +303,52 @@
     <audio id="bgAudio" loop preload="auto"></audio>
 
     <script>
-        // =========================================================================
-        // SOZLAMALAR (Shu yerdagi ma'lumotlarni o'zingizga qarab o'zgartiring)
-        // =========================================================================
+        const myMessages = [
+            "You’re not just",
+            "special to me…",
+            "you mean more",
+            "than I can",
+            "put into words."
+        ];
 
-        const myMessage = "Siz xohlagan gap...";
+        const directVideoLink = "https://drive.google.com/file/d/1mCB7Tsoiz2KE1iwXNnUo8jGSS219j_HJ/view?usp=sharing";
 
-        // Google Drive havolalari (Video va Musiqa "Hamma ko'ra oladigan - Public" qilingan diledan linki bo'lishi shart!)
-        const googleDriveVideoLink = "https://drive.google.com/file/d/1mCB7Tsoiz2KE1iwXNnUo8jGSS219j_HJ/view?usp=sharing";
+        const directAudioLink = "https://drive.google.com/file/d/1-Yy-v254Lz89w6E3k4jr6re0CCvvyvQh/view?usp=sharing";
 
-        const googleDriveAudioLink = "https://drive.google.com/file/d/1-Yy-v254Lz89w6E3k4jr6re0CCvvyvQh/view?usp=sharing";
-
-        // =========================================================================
-
-        // Google Drive havolasini avtomatik direct-play (to'g'ridan-to'g'ri o'qiladigan) rejimiga o'tkazuvchi qism:
-        function getDriveDirectLink(url) {
-            if (!url || url.includes("SIZ_")) return "";
-            let fileId = "";
-            const match1 = url.match(/\/file\/d\/([a-zA-Z0-9_-]+)/);
-            if (match1) fileId = match1[1];
-            const match2 = url.match(/[?&]id=([a-zA-Z0-9_-]+)/);
-            if (match2) fileId = match2[1];
-
-            return fileId ? `https://drive.google.com/uc?export=download&id=${fileId}` : url;
+        function formatDirectLink(url) {
+            if (!url) return "";
+            if (url.includes('drive.google.com/file/d/')) {
+                const match = url.match(/\/file\/d\/([a-zA-Z0-9_-]+)/);
+                if (match) return `https://drive.google.com/uc?export=download&id=${match[1]}`;
+            }
+            if (url.includes('dropbox.com')) {
+                return url.replace('dl=0', 'dl=1');
+            }
+            return url;
         }
 
         function getDriveIframeLink(url) {
-            if (!url || url.includes("SIZ_")) return "";
-            let fileId = "";
-            const match1 = url.match(/\/file\/d\/([a-zA-Z0-9_-]+)/);
-            if (match1) fileId = match1[1];
-            const match2 = url.match(/[?&]id=([a-zA-Z0-9_-]+)/);
-            if (match2) fileId = match2[1];
-
-            return fileId ? `https://drive.google.com/file/d/${fileId}/preview` : url;
+            if (!url) return "";
+            const match = url.match(/\/file\/d\/([a-zA-Z0-9_-]+)/);
+            if (match) return `https://drive.google.com/file/d/${match[1]}/preview`;
+            return url;
         }
 
         const overlay = document.getElementById('startOverlay');
         const bgAudio = document.getElementById('bgAudio');
         let myVideo = document.getElementById('myVideo');
-        const muteBtn = document.getElementById('muteBtn');
+        const videoWrapper = document.getElementById('videoWrapper');
+        const playPauseOverlay = document.getElementById('playPauseOverlay');
+        const playPauseIcon = document.querySelector('#playPauseOverlay i');
         const countdownEl = document.getElementById('countdown');
         const wordContainer = document.getElementById('wordContainer');
-        const videoWrapper = document.getElementById('videoWrapper');
 
-        const isDriveVideo = (googleDriveVideoLink || "").includes('drive.google.com');
+        const isDriveVideo = (directVideoLink || "").includes('drive.google.com');
 
-        // Agar video Google Drive orqali ulanayotgan bo'lsa (Google to'g'ridan to'g'ri o'qishni bloklamoqda):
         if (isDriveVideo) {
+            // Google Drive bloklanishini oldini olish uchun iframe ga o'tamiz
             const iframe = document.createElement('iframe');
-            iframe.src = getDriveIframeLink(googleDriveVideoLink);
+            iframe.src = getDriveIframeLink(directVideoLink);
             iframe.width = "100%";
             iframe.height = "100%";
             iframe.style.border = "none";
@@ -394,14 +356,16 @@
             iframe.allow = "autoplay";
             myVideo.replaceWith(iframe);
             myVideo = iframe;
-
-            muteBtn.style.display = 'none'; // Iframe orqali ovozni to'g'ridan to'g'ri boshqarib bo'lmaydi
+            playPauseOverlay.style.display = 'none'; // Iframe bilan custom tugmacha ishlata olmaymiz
         } else {
-            myVideo.src = getDriveDirectLink(googleDriveVideoLink);
+            myVideo.src = formatDirectLink(directVideoLink);
         }
 
-        // Musiqa kichik hajmda bo'lganligi sababli Google bloklamaydi, u <audio> tegi bilan ishlashda davom etadi.
-        bgAudio.src = getDriveDirectLink(googleDriveAudioLink);
+        bgAudio.src = formatDirectLink(directAudioLink);
+
+        if (!isDriveVideo) {
+            myVideo.muted = false;
+        }
 
         overlay.addEventListener('click', () => {
             overlay.style.opacity = '0';
@@ -411,33 +375,39 @@
 
             bgAudio.muted = false;
 
-            if (!isDriveVideo) {
-                myVideo.muted = false;
-                muteBtn.innerHTML = '<i class="fa-solid fa-volume-high"></i>';
-                if (myVideo.src) myVideo.play().catch(e => console.log('Video xatosi:', e));
+            const playPromise = bgAudio.play();
+            if (playPromise !== undefined) {
+                playPromise.catch(error => {
+                    console.warn("Musiqa to'g'ridan o'qilmadi. Sababi: Katta fayl yoki noto'g'ri havola kiritilgan bo'lishi mumkin.");
+                });
             }
 
-            if (bgAudio.src) bgAudio.play().catch(e => console.log('Audio xatosi (Fayl URL noto\'g\'ri bolishi mumkin):', e));
+            if (!isDriveVideo && typeof myVideo.load === 'function') {
+                myVideo.load();
+            }
 
+            // =====================================================
+            // Video ustiga bitta bosilganda Play/Pause bo'lish mantiqi
+            if (!isDriveVideo) {
+                videoWrapper.addEventListener('click', () => {
+                    if (myVideo.paused) {
+                        myVideo.play()
+                            .then(() => {
+                                videoWrapper.classList.remove('paused');
+                                playPauseIcon.className = "fa-solid fa-pause";
+                            })
+                            .catch(e => alert("Video o'qishda bloklanyapti. Iltimos o'zgartirilgan to'g'ridan-to'g'ri link bering (masalan Dropbox dan yoki raw mp4)!"));
+                    } else {
+                        myVideo.pause();
+                        videoWrapper.classList.add('paused');
+                        playPauseIcon.className = "fa-solid fa-play";
+                    }
+                });
+            }
+            // =====================================================
             startSquareMatrix();
             startSequence();
         });
-
-        if (!isDriveVideo) {
-            muteBtn.addEventListener('mousedown', (e) => e.stopPropagation());
-            muteBtn.addEventListener('touchstart', (e) => e.stopPropagation());
-            muteBtn.addEventListener('click', () => {
-                if (myVideo.muted) {
-                    myVideo.muted = false;
-                    bgAudio.muted = false;
-                    muteBtn.innerHTML = '<i class="fa-solid fa-volume-high"></i>';
-                } else {
-                    myVideo.muted = true;
-                    bgAudio.muted = true;
-                    muteBtn.innerHTML = '<i class="fa-solid fa-volume-xmark"></i>';
-                }
-            });
-        }
 
         function startSquareMatrix() {
             const canvas = document.getElementById('matrixCanvas');
@@ -446,8 +416,8 @@
             canvas.width = window.innerWidth;
             canvas.height = window.innerHeight;
 
-            const size = 3;
-            const columns = Math.floor(canvas.width / (size * 4));
+            const size = 11; // Kvadratcha hajmi yana oshirildi
+            const columns = Math.floor(canvas.width / (size * 3));
 
             const drops = [];
             for (let x = 0; x < columns; x++) {
@@ -459,7 +429,7 @@
                 ctx.fillRect(0, 0, canvas.width, canvas.height);
 
                 for (let i = 0; i < drops.length; i++) {
-                    const x = i * size * 4;
+                    const x = i * size * 3;
                     const y = drops[i] * size * 2;
 
                     const rand = Math.random();
@@ -487,17 +457,19 @@
 
         function startSequence() {
             countdownEl.style.display = 'block';
-            let count = 3;
-            countdownEl.innerText = count;
+            const countdownWords = ["Three", "Two", "One"];
+            let countIndex = 0;
+
+            countdownEl.innerText = countdownWords[countIndex];
             countdownEl.style.animation = 'countdownAnim 1.2s ease-in-out forwards';
 
             const countInterval = setInterval(() => {
-                count--;
-                if (count > 0) {
+                countIndex++;
+                if (countIndex < countdownWords.length) {
                     countdownEl.style.animation = 'none';
                     void countdownEl.offsetWidth;
                     countdownEl.style.animation = 'countdownAnim 1.2s ease-in-out forwards';
-                    countdownEl.innerText = count;
+                    countdownEl.innerText = countdownWords[countIndex];
                 } else {
                     clearInterval(countInterval);
                     countdownEl.style.display = 'none';
@@ -507,18 +479,17 @@
         }
 
         function startTextSplitter() {
-            const words = myMessage.split(" ");
             let currentIndex = 0;
 
             function showNextWord() {
-                if (currentIndex >= words.length) {
-                    showVideoAndPhysics();
+                if (currentIndex >= myMessages.length) {
+                    showVideo();
                     return;
                 }
 
                 const wordSpan = document.createElement('span');
                 wordSpan.className = 'word';
-                wordSpan.innerText = words[currentIndex];
+                wordSpan.innerText = myMessages[currentIndex];
 
                 wordContainer.innerHTML = '';
                 wordContainer.appendChild(wordSpan);
@@ -534,106 +505,22 @@
             showNextWord();
         }
 
-        function showVideoAndPhysics() {
+        function showVideo() {
             videoWrapper.style.display = 'block';
             setTimeout(() => {
                 videoWrapper.classList.add('show');
             }, 50);
 
-            setTimeout(() => {
-                startAntigravity();
-            }, 1200);
-        }
-
-        function startAntigravity() {
-            const Engine = Matter.Engine,
-                Runner = Matter.Runner,
-                Bodies = Matter.Bodies,
-                Composite = Matter.Composite,
-                Mouse = Matter.Mouse,
-                MouseConstraint = Matter.MouseConstraint;
-
-            const engine = Engine.create();
-            engine.world.gravity.y = 0.15;
-
-            const matterContainer = document.getElementById('matterContainer');
-            const objects = [];
-
-            const thickness = 60;
-            const ground = Bodies.rectangle(window.innerWidth / 2, window.innerHeight + thickness / 2, window.innerWidth, thickness, { isStatic: true });
-            const leftWall = Bodies.rectangle(-thickness / 2, window.innerHeight / 2, thickness, window.innerHeight, { isStatic: true });
-            const rightWall = Bodies.rectangle(window.innerWidth + thickness / 2, window.innerHeight / 2, thickness, window.innerHeight, { isStatic: true });
-            const ceiling = Bodies.rectangle(window.innerWidth / 2, -thickness / 2, window.innerWidth, thickness, { isStatic: true });
-
-            Composite.add(engine.world, [ground, leftWall, rightWall, ceiling]);
-
-            const mouse = Mouse.create(document.body);
-            const mouseConstraint = MouseConstraint.create(engine, {
-                mouse: mouse,
-                constraint: {
-                    stiffness: 0.2,
-                    render: { visible: false }
-                }
-            });
-            Composite.add(engine.world, mouseConstraint);
-
-            const runner = Runner.create();
-            Runner.run(runner, engine);
-
-            const generateObject = () => {
-                const rand = Math.random();
-                const x = Math.random() * (window.innerWidth - 100) + 50;
-                const y = -80;
-
-                const elem = document.createElement('div');
-                elem.className = 'physics-item';
-
-                let body;
-                if (rand > 0.5) {
-                    elem.innerHTML = Math.random() > 0.5 ? '<i class="fa-solid fa-heart"></i>' : '🌸';
-                    elem.style.color = '#ff69b4';
-                    elem.style.fontSize = `${Math.random() * 1.5 + 1.5}rem`;
-                    elem.style.filter = 'drop-shadow(0 0 8px rgba(255,105,180,0.6))';
-
-                    matterContainer.appendChild(elem);
-                    const radius = (elem.offsetWidth || 30) / 2;
-                    body = Bodies.circle(x, y, radius, { restitution: 0.85, friction: 0.005 });
-                } else {
-                    const texts = ['Malikam', 'Farishtam', 'Go\'zalim', 'Yagonam', 'Asalim', 'Jonim', '🌸', '💖', '✨'];
-                    const txt = texts[Math.floor(Math.random() * texts.length)];
-                    elem.innerText = txt;
-                    elem.classList.add('romantic-text');
-
-                    const size = txt.length > 2 ? 80 : 50;
-                    elem.style.width = `${size}px`;
-                    elem.style.height = `${size}px`;
-
-                    matterContainer.appendChild(elem);
-                    body = Bodies.circle(x, y, size / 2, { restitution: 0.7, friction: 0.01 });
-                }
-
-                Composite.add(engine.world, body);
-                objects.push({ body, elem });
-            };
-
-            let drops = 0;
-            const dropInterval = setInterval(() => {
-                generateObject();
-                drops++;
-                if (drops >= 45) clearInterval(dropInterval);
-            }, 350);
-
-            Matter.Events.on(engine, 'afterUpdate', function () {
-                for (let i = 0; i < objects.length; i++) {
-                    const { body, elem } = objects[i];
-                    elem.style.transform = `translate(${body.position.x - elem.offsetWidth / 2}px, ${body.position.y - elem.offsetHeight / 2}px) rotate(${body.angle}rad)`;
-                }
-            });
-
-            window.addEventListener('resize', () => {
-                Matter.Body.setPosition(ground, { x: window.innerWidth / 2, y: window.innerHeight + thickness / 2 });
-                Matter.Body.setPosition(rightWall, { x: window.innerWidth + thickness / 2, y: window.innerHeight / 2 });
-            });
+            if (!isDriveVideo) {
+                myVideo.play()
+                    .then(() => {
+                        videoWrapper.classList.remove('paused');
+                        playPauseIcon.className = "fa-solid fa-pause";
+                    })
+                    .catch(e => {
+                        // Bloklansa play tugmasi doimiy turib turadi
+                    });
+            }
         }
     </script>
 </body>
