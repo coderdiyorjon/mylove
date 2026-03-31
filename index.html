@@ -1,12 +1,14 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="uz">
 
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Special for you...</title>
     <!-- Fonts -->
-    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500&display=swap" rel="stylesheet">
+    <link
+        href="https://fonts.googleapis.com/css2?family=Dancing+Script:wght@500;700&family=Montserrat:wght@300;400;500&display=swap"
+        rel="stylesheet">
     <!-- FontAwesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
@@ -17,8 +19,8 @@
         }
 
         body {
-            background-color: #0d0d0d;
-            color: #f2f2f2;
+            background-color: #000;
+            color: #fff;
             font-family: 'Montserrat', sans-serif;
             overflow: hidden;
             width: 100vw;
@@ -26,103 +28,292 @@
             display: flex;
             justify-content: center;
             align-items: center;
+            flex-direction: column;
+            user-select: none;
             -webkit-tap-highlight-color: transparent;
         }
 
-        /* Boshlang'ich oyna (Yurakcha = Play tugmasi) */
+        /* Matrix Canvas */
+        #matrixCanvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 1;
+            opacity: 0.6;
+            pointer-events: none;
+        }
+
+        /* Click Overlay */
         #startOverlay {
             position: absolute;
-            top: 0; left: 0; right: 0; bottom: 0;
-            background: #000000;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.9);
             z-index: 100;
             display: flex;
             justify-content: center;
             align-items: center;
             flex-direction: column;
             cursor: pointer;
-            transition: opacity 1.5s ease-in-out, transform 1.5s ease-in-out;
+            backdrop-filter: blur(8px);
+            transition: opacity 0.8s ease;
         }
 
-        #startOverlay.hidden {
-            opacity: 0;
-            transform: scale(1.1);
-            pointer-events: none;
-        }
-
-        .heart-icon {
-            font-size: clamp(2rem, 8vw, 3.5rem);
-            color: #d9d9d9;
+        .heart-pulse {
+            font-size: clamp(2.5rem, 8vw, 4rem);
+            color: #ffffff;
             margin-bottom: 20px;
-            animation: pulse 2s infinite ease-in-out;
-            text-shadow: 0 0 15px rgba(255, 255, 255, 0.2);
+            text-shadow: 0 0 25px rgba(255, 255, 255, 0.8);
+            animation: pulseHeart 1.5s infinite;
         }
 
         #startOverlay p {
-            font-size: clamp(1.1rem, 5vw, 1.8rem);
-            color: #e6e6e6;
-            letter-spacing: 3px;
-            text-shadow: 0 0 10px rgba(255, 255, 255, 0.1);
-            font-weight: 300;
-            text-transform: uppercase;
+            font-size: clamp(1.2rem, 5vw, 2.5rem);
+            color: #cccccc;
+            font-family: 'Dancing Script', cursive;
+            text-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
+            letter-spacing: 2px;
+            text-align: center;
+            padding: 0 20px;
         }
 
-        @keyframes pulse {
-            0% { transform: scale(1); opacity: 0.8; }
-            50% { transform: scale(1.15); opacity: 1; text-shadow: 0 0 25px rgba(255, 255, 255, 0.4); }
-            100% { transform: scale(1); opacity: 0.8; }
+        @keyframes pulseHeart {
+            0% {
+                transform: scale(1);
+            }
+
+            15% {
+                transform: scale(1.15);
+            }
+
+            30% {
+                transform: scale(1);
+            }
+
+            45% {
+                transform: scale(1.15);
+            }
+
+            100% {
+                transform: scale(1);
+            }
         }
 
-        /* Video Konteyneri */
-        #videoContainer {
+        #contentContainer {
             position: absolute;
-            top: 0; left: 0;
-            width: 100%; height: 100%;
+            top: 0;
+            left: 0;
+            z-index: 10;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+        }
+
+        /* Countdown */
+        #countdown {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-family: 'Montserrat', sans-serif;
+            font-weight: 300;
+            font-size: clamp(4rem, 15vw, 10rem);
+            color: #ffffff;
+            text-shadow: 0 0 20px rgba(255, 255, 255, 0.6), 0 0 40px rgba(200, 200, 200, 0.4);
+            display: none;
+        }
+
+        @keyframes countdownAnim {
+            0% {
+                transform: translate(-50%, -50%) scale(0.5);
+                opacity: 0;
+                filter: blur(10px);
+            }
+
+            40% {
+                transform: translate(-50%, -50%) scale(1.05);
+                opacity: 1;
+                filter: blur(0px);
+            }
+
+            60% {
+                transform: translate(-50%, -50%) scale(1);
+                opacity: 1;
+                filter: blur(0px);
+            }
+
+            100% {
+                transform: translate(-50%, -50%) scale(1.3);
+                opacity: 0;
+                filter: blur(8px);
+            }
+        }
+
+        /* Text Container */
+        #wordContainer {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 100%;
+            text-align: center;
+            pointer-events: none;
+            z-index: 25;
+            padding: 0 20px;
+        }
+
+        .word {
+            font-family: 'Dancing Script', cursive;
+            font-size: clamp(2.5rem, 10vw, 8rem);
+            color: #ffffff;
+            text-shadow: 0 0 15px rgba(255, 255, 255, 0.8), 0 0 30px rgba(200, 200, 200, 0.6);
+            opacity: 0;
+            display: inline-block;
+            line-height: 1.2;
+        }
+
+        @keyframes appearDisappear {
+            0% {
+                opacity: 0;
+                transform: scale(0.8) translateY(20px);
+                filter: blur(12px);
+            }
+
+            30% {
+                opacity: 1;
+                transform: scale(1) translateY(0);
+                filter: blur(0);
+            }
+
+            70% {
+                opacity: 1;
+                transform: scale(1) translateY(0);
+                filter: blur(0);
+            }
+
+            100% {
+                opacity: 0;
+                transform: scale(1.1) translateY(-20px);
+                filter: blur(10px);
+            }
+        }
+
+        /* Video Player 9:16 Setup */
+        #videoWrapper {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -45%) scale(0.9);
+            width: 90vw;
+            max-width: calc(85vh * 9 / 16); /* Device heightdan oshib ketmasligi uchun aspect ratio va vh yordamida cheklov */
+            aspect-ratio: 9 / 16;
+            height: auto;
+            display: none;
+            opacity: 0;
+            pointer-events: auto;
+            cursor: pointer;
+            z-index: 20;
+
+            border-radius: 20px;
+            padding: 8px;
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            box-shadow: 0 25px 50px rgba(0, 0, 0, 0.4),
+                inset 0 0 20px rgba(255, 255, 255, 0.1),
+                0 0 30px rgba(255, 255, 255, 0.2);
+            transition: all 1.8s cubic-bezier(0.25, 1, 0.5, 1);
+        }
+
+        #videoWrapper.show {
+            opacity: 1;
+            transform: translate(-50%, -50%) scale(1);
+        }
+
+        #myVideo {
+            width: 100%;
+            height: 100%;
+            display: block;
+            object-fit: cover;
+            border-radius: 14px;
+            background: #000;
+        }
+
+        /* Play/Pause tugmasi */
+        #playPauseOverlay {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 70px;
+            height: 70px;
+            background: rgba(255, 255, 255, 0.5);
+            backdrop-filter: blur(5px);
+            border-radius: 50%;
             display: flex;
             justify-content: center;
             align-items: center;
-            background-color: #0d0d0d;
-            opacity: 0;
-            transform: scale(0.95);
-            transition: opacity 1.5s ease-in-out, transform 1.5s ease-in-out;
-            z-index: 50;
-        }
-
-        #videoContainer.show {
-            opacity: 1;
-            transform: scale(1);
-        }
-
-        /* Video O'yinchisi: Sof (tag) yoki Iframe o'rnini egallaydi */
-        #mainVideo {
-            width: 100%;
-            height: 100%;
-            object-fit: contain;
-            background-color: #0d0d0d;
+            color: #000;
+            font-size: 2rem;
+            z-index: 21;
+            box-shadow: 0 0 20px rgba(255, 255, 255, 0.6);
+            transition: all 0.3s ease;
             pointer-events: auto;
+            /* changed from none so we can hide it properly */
+            opacity: 0;
             cursor: pointer;
         }
 
+        #videoWrapper:hover #playPauseOverlay {
+            background: rgba(255, 255, 255, 0.8);
+            transform: translate(-50%, -50%) scale(1.1);
+        }
+
+        #videoWrapper.paused #playPauseOverlay {
+            opacity: 1;
+        }
     </style>
 </head>
 
 <body>
-    <!-- 1. Boshlang'ich sahifa (Yurakcha Play oynasi) -->
     <div id="startOverlay">
-        <i class="fa-solid fa-heart heart-icon"></i>
-        <p>Click to start</p>
+        <div class="heart-pulse">
+            <i class="fa-solid fa-heart"></i>
+        </div>
+        <p>Click to open...</p>
     </div>
 
-    <!-- 2. Video qismi -->
-    <div id="videoContainer">
-        <!-- videoga autoloop hamda playsinline berildi (Agar Iframe kelmasa ishlaydi) -->
-        <video id="mainVideo" playsinline preload="auto" loop></video>
+    <canvas id="matrixCanvas"></canvas>
+
+    <div id="contentContainer">
+        <div id="countdown">3</div>
+        <div id="wordContainer"></div>
+
+        <div id="videoWrapper" class="paused">
+            <video id="myVideo" playsinline preload="auto"></video>
+            <div id="playPauseOverlay"><i class="fa-solid fa-play"></i></div>
+        </div>
     </div>
+
+    <!-- Background Audio -->
+    <audio id="bgAudio" loop preload="auto"></audio>
 
     <script>
-        // =========================================================
-        // VIDEO HAVOLASI
-        // =========================================================
+        const myMessages = [
+            "You’re not just",
+            "special to me…",
+            "you mean more",
+            "than I can",
+            "put into words."
+        ];
+
         const directVideoLink = "https://drive.google.com/file/d/1sK9L0U16tGbcTvkQDwHzfJwCCGhaI8u-/view?usp=sharing";
+
+        const directAudioLink = "https://drive.google.com/file/d/1-Yy-v254Lz89w6E3k4jr6re0CCvvyvQh/view?usp=sharing";
 
         function formatDirectLink(url) {
             if (!url) return "";
@@ -139,66 +330,197 @@
         function getDriveIframeLink(url) {
             if (!url) return "";
             const match = url.match(/\/file\/d\/([a-zA-Z0-9_-]+)/);
-            // Autoplay parametri bilan uzatish (Google ba'zan ruxsat beradi ba'zan yo'q)
-            if (match) return `https://drive.google.com/file/d/${match[1]}/preview?autoplay=1`;
+            if (match) return `https://drive.google.com/file/d/${match[1]}/preview`;
             return url;
         }
 
-        const startOverlay = document.getElementById('startOverlay');
-        const videoContainer = document.getElementById('videoContainer');
-        let mainVideo = document.getElementById('mainVideo');
+        const overlay = document.getElementById('startOverlay');
+        const bgAudio = document.getElementById('bgAudio');
+        let myVideo = document.getElementById('myVideo');
+        const videoWrapper = document.getElementById('videoWrapper');
+        const playPauseOverlay = document.getElementById('playPauseOverlay');
+        const playPauseIcon = document.querySelector('#playPauseOverlay i');
+        const countdownEl = document.getElementById('countdown');
+        const wordContainer = document.getElementById('wordContainer');
 
         const isDriveVideo = (directVideoLink || "").includes('drive.google.com');
 
         if (isDriveVideo) {
-            // Google Drive ekanini sezadi va Iframe-ga qaytib uning o'z pleyerini chaqiradi
+            // Google Drive bloklanishini oldini olish uchun iframe ga o'tamiz
             const iframe = document.createElement('iframe');
-            iframe.id = "mainVideo"; // Dizayn stilini ushlab qolishi uchun xuddi shu ID beriladi
             iframe.src = getDriveIframeLink(directVideoLink);
             iframe.width = "100%";
             iframe.height = "100%";
             iframe.style.border = "none";
-            iframe.allow = "autoplay; fullscreen";
-            
-            mainVideo.replaceWith(iframe);
-            mainVideo = iframe; 
+            iframe.style.borderRadius = "14px";
+            iframe.allow = "autoplay";
+            myVideo.replaceWith(iframe);
+            myVideo = iframe;
+            playPauseOverlay.style.display = 'none'; // Iframe bilan custom tugmacha ishlata olmaymiz
         } else {
-            // Agar boshqa manbadagi sof mp4 video bo'lsa shunchaki sof tag qoladi
-            mainVideo.src = formatDirectLink(directVideoLink);
+            myVideo.src = formatDirectLink(directVideoLink);
         }
 
-        // Click to Start (Yurakcha) bosilganda video boshlanishini talab qilish
-        startOverlay.addEventListener('click', () => {
-            startOverlay.classList.add('hidden');
-            
-            setTimeout(() => {
-                startOverlay.style.display = 'none';
-                videoContainer.classList.add('show');
-                
-                if (!isDriveVideo) {
-                    mainVideo.muted = false;
-                    const playPromise = mainVideo.play();
-                    
-                    if (playPromise !== undefined) {
-                        playPromise.catch(e => {
-                            console.error(e);
-                        });
-                    }
-                } else {
-                    // Iframe Google Drive bo'lganligi sababli, uning Autoplay siyosatini sirtan bosib bo'lmaydi.
-                    // Shuning uchun iframe'ning o'zidagi knopkadan ijroni boshqaradilar
-                }
-            }, 800);
-        });
+        bgAudio.src = formatDirectLink(directAudioLink);
 
         if (!isDriveVideo) {
-            videoContainer.addEventListener('click', () => {
-                if (mainVideo.paused) {
-                    mainVideo.play().catch(e => {});
-                } else {
-                    mainVideo.pause();
+            myVideo.muted = false;
+        }
+
+        overlay.addEventListener('click', () => {
+            overlay.style.opacity = '0';
+            setTimeout(() => {
+                overlay.style.display = 'none';
+            }, 800);
+
+            bgAudio.muted = false;
+
+            const playPromise = bgAudio.play();
+            if (playPromise !== undefined) {
+                playPromise.catch(error => {
+                    console.warn("Musiqa to'g'ridan o'qilmadi. Sababi: Katta fayl yoki noto'g'ri havola kiritilgan bo'lishi mumkin.");
+                });
+            }
+
+            if (!isDriveVideo && typeof myVideo.load === 'function') {
+                myVideo.load();
+            }
+
+            // =====================================================
+            // Video ustiga bitta bosilganda Play/Pause bo'lish mantiqi
+            if (!isDriveVideo) {
+                videoWrapper.addEventListener('click', () => {
+                    if (myVideo.paused) {
+                        myVideo.play()
+                            .then(() => {
+                                videoWrapper.classList.remove('paused');
+                                playPauseIcon.className = "fa-solid fa-pause";
+                            })
+                            .catch(e => alert("Video o'qishda bloklanyapti. Iltimos o'zgartirilgan to'g'ridan-to'g'ri link bering (masalan Dropbox dan yoki raw mp4)!"));
+                    } else {
+                        myVideo.pause();
+                        videoWrapper.classList.add('paused');
+                        playPauseIcon.className = "fa-solid fa-play";
+                    }
+                });
+            }
+            // =====================================================
+            startSquareMatrix();
+            startSequence();
+        });
+
+        function startSquareMatrix() {
+            const canvas = document.getElementById('matrixCanvas');
+            const ctx = canvas.getContext('2d');
+
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+
+            const size = 11; // Kvadratcha hajmi yana oshirildi
+            const columns = Math.floor(canvas.width / (size * 3));
+
+            const drops = [];
+            for (let x = 0; x < columns; x++) {
+                drops[x] = Math.random() * canvas.height;
+            }
+
+            function draw() {
+                ctx.fillStyle = 'rgba(0, 0, 0, 0.15)';
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+                for (let i = 0; i < drops.length; i++) {
+                    const x = i * size * 3;
+                    const y = drops[i] * size * 2;
+
+                    const rand = Math.random();
+                    if (rand > 0.8) ctx.fillStyle = '#ffffff'; // Oq
+                    else if (rand > 0.5) ctx.fillStyle = '#aaaaaa'; // Ochiq kulrang
+                    else ctx.fillStyle = '#555555'; // To'q kulrang
+
+                    ctx.globalAlpha = Math.random() * 0.8 + 0.2;
+                    ctx.fillRect(x, y, size, size);
+                    ctx.globalAlpha = 1.0;
+
+                    if (y > canvas.height && Math.random() > 0.97) {
+                        drops[i] = 0;
+                    }
+                    drops[i]++;
                 }
+            }
+            setInterval(draw, 50);
+
+            window.addEventListener('resize', () => {
+                canvas.width = window.innerWidth;
+                canvas.height = window.innerHeight;
             });
+        }
+
+        function startSequence() {
+            countdownEl.style.display = 'block';
+            const countdownWords = ["Three", "Two", "One"];
+            let countIndex = 0;
+
+            countdownEl.innerText = countdownWords[countIndex];
+            countdownEl.style.animation = 'countdownAnim 1.2s ease-in-out forwards';
+
+            const countInterval = setInterval(() => {
+                countIndex++;
+                if (countIndex < countdownWords.length) {
+                    countdownEl.style.animation = 'none';
+                    void countdownEl.offsetWidth;
+                    countdownEl.style.animation = 'countdownAnim 1.2s ease-in-out forwards';
+                    countdownEl.innerText = countdownWords[countIndex];
+                } else {
+                    clearInterval(countInterval);
+                    countdownEl.style.display = 'none';
+                    startTextSplitter();
+                }
+            }, 1200);
+        }
+
+        function startTextSplitter() {
+            let currentIndex = 0;
+
+            function showNextWord() {
+                if (currentIndex >= myMessages.length) {
+                    showVideo();
+                    return;
+                }
+
+                const wordSpan = document.createElement('span');
+                wordSpan.className = 'word';
+                wordSpan.innerText = myMessages[currentIndex];
+
+                wordContainer.innerHTML = '';
+                wordContainer.appendChild(wordSpan);
+
+                wordSpan.style.animation = 'appearDisappear 1.8s ease-in-out forwards';
+
+                setTimeout(() => {
+                    currentIndex++;
+                    showNextWord();
+                }, 1800);
+            }
+
+            showNextWord();
+        }
+
+        function showVideo() {
+            videoWrapper.style.display = 'block';
+            setTimeout(() => {
+                videoWrapper.classList.add('show');
+            }, 50);
+
+            if (!isDriveVideo) {
+                myVideo.play()
+                    .then(() => {
+                        videoWrapper.classList.remove('paused');
+                        playPauseIcon.className = "fa-solid fa-pause";
+                    })
+                    .catch(e => {
+                        // Bloklansa play tugmasi doimiy turib turadi
+                    });
+            }
         }
     </script>
 </body>
